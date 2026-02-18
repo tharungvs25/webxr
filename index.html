@@ -1,135 +1,359 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>WebXR AR Tumbler Assembly</title>
+  <head>
+    <meta charset="utf-8">
+    <title>VR Assembly Guidance System — Interactive Cup Assembly</title>
+    <meta name="description" content="A-Frame VR Workshop Demo — Meta Quest 3s">
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <style>
+      body { margin: 0; }
+      #ui {
+        position: fixed;
+        top: 20px;
+        width: 100%;
+        text-align: center;
+        z-index: 1000;
+      }
+      #instruction {
+        color: white;
+        font-family: Arial, sans-serif;
+        font-size: 24px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 15px 30px;
+        border-radius: 10px;
+        display: inline-block;
+        margin-bottom: 15px;
+      }
+      #progressContainer {
+        width: 60%;
+        margin: auto;
+        background: rgba(68, 68, 68, 0.8);
+        height: 15px;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      #progress {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #00ff88, #00cc66);
+        border-radius: 10px;
+        transition: width 0.5s ease;
+      }
+      #stepInfo {
+        color: #aaa;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
 
-  <!-- A-Frame -->
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <!-- UI Overlay -->
+    <div id="ui">
+      <div id="instruction">Press Trigger or Click to Start Assembly</div>
+      <div id="progressContainer">
+        <div id="progress"></div>
+      </div>
+      <div id="stepInfo">Step 0 of 4</div>
+    </div>
 
-  <!-- AR.js -->
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+    <a-scene>
 
-  <style>
-    body { margin: 0; overflow: hidden; }
-    #ui {
-      position: fixed;
-      bottom: 20px;
-      width: 100%;
-      text-align: center;
-      color: white;
-      font-family: sans-serif;
-    }
-    #progressBar {
-      width: 80%;
-      height: 10px;
-      background: #444;
-      margin: auto;
-      border-radius: 10px;
-    }
-    #progress {
-      height: 100%;
-      width: 0%;
-      background: lime;
-      border-radius: 10px;
-    }
-  </style>
-</head>
+      <!-- Assets -->
+      <a-assets>
+        <img id="floor" src="https://cdn.aframe.io/a-painter/images/floor.jpg">
+        <img id="city-sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg">
+        
+        <!-- GLTF Models -->
+        <a-asset-item id="cupModel" src="cup.gltf"></a-asset-item>
+        <a-asset-item id="capModel" src="cap.gltf"></a-asset-item>
+      </a-assets>
 
-<body>
+      <!-- Camera + Controls (Desktop & VR) -->
+      <a-entity id="rig">
+        <a-entity camera position="0 1.6 0" look-controls wasd-controls>
+          <!-- Desktop mouse cursor -->
+          <a-cursor
+            color="#FFFFFF"
+            fuse="false"
+            raycaster="objects: .clickable; far: 20">
+          </a-cursor>
+        </a-entity>
 
-<div id="ui">
-  <h3 id="instruction">Scan surface...</h3>
-  <div id="progressBar">
-    <div id="progress"></div>
-  </div>
-</div>
+        <!-- VR Controllers -->
+        <a-entity
+          id="leftController"
+          meta-touch-controls="hand: left"
+          laser-controls="hand: left"
+          raycaster="objects: .clickable; far: 20"
+          line="color: cyan">
+        </a-entity>
+        <a-entity
+          id="rightController"
+          meta-touch-controls="hand: right"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable; far: 20"
+          line="color: magenta">
+        </a-entity>
+      </a-entity>
 
-<a-scene
-  embedded
-  vr-mode-ui="enabled: true"
-  renderer="logarithmicDepthBuffer: true;"
-  xr-mode-ui="enabled: true"
-  arjs="sourceType: webcam;">
+      <!-- Lights -->
+      <a-light type="ambient" color="#FFF" intensity="1.0"></a-light>
+      <a-light type="directional" color="#FFF" intensity="0.8" position="2 4 1"></a-light>
+      <a-light type="point" color="#FFF" intensity="0.5" position="0 2 -2"></a-light>
 
-  <!-- Camera -->
-  <a-entity camera></a-entity>
+      <!-- Assembly Workspace -->
+      <!-- Work Table -->
+      <a-box
+        position="0 0.5 -2"
+        width="1.5"
+        height="0.1"
+        depth="1.5"
+        color="#8B4513"
+        shadow>
+      </a-box>
 
-  <!-- Anchor -->
-  <a-entity id="anchor" visible="false">
-    
-    <a-entity id="cup"
-      gltf-model="cup.gltf"
-      scale="0.3 0.3 0.3"
-      material="opacity: 0.5; transparent: true">
-    </a-entity>
+      <!-- Assembly Area -->
+      <a-entity id="assembly" position="0 0.56 -2">
 
-    <a-entity id="cover"
-      gltf-model="cover.gltf"
-      scale="0.3 0.3 0.3"
-      position="0 0.1 0"
-      visible="false"
-      material="opacity: 0.5; transparent: true">
-    </a-entity>
+        <!-- CUP - built with primitives -->
+        <a-entity id="cup" position="0 0 0">
+          <!-- Cup body -->
+          <a-cylinder 
+            height="0.3" 
+            radius="0.1" 
+            color="#4488FF" 
+            opacity="0.9"
+            segments-radial="32">
+          </a-cylinder>
+          <!-- Cup bottom -->
+          <a-cylinder 
+            position="0 -0.15 0"
+            height="0.01" 
+            radius="0.095" 
+            color="#3366CC">
+          </a-cylinder>
+          <!-- Cup rim -->
+          <a-torus 
+            position="0 0.15 0" 
+            radius="0.1" 
+            radius-tubular="0.012" 
+            color="#3366CC">
+          </a-torus>
+        </a-entity>
 
-    <a-entity id="cap"
-      gltf-model="cap.gltf"
-      scale="0.3 0.3 0.3"
-      position="0 0.2 0"
-      visible="false"
-      material="opacity: 0.5; transparent: true">
-    </a-entity>
+        <!-- CAP - built with primitives -->
+        <a-entity id="cap" position="0.5 0 0" class="clickable">
+          <!-- Cap disc -->
+          <a-cylinder 
+            height="0.04" 
+            radius="0.11" 
+            color="#FF8844" 
+            opacity="0.9"
+            segments-radial="32">
+          </a-cylinder>
+          <!-- Cap rim -->
+          <a-torus 
+            position="0 0.02 0" 
+            radius="0.11" 
+            radius-tubular="0.01" 
+            color="#DD6622">
+          </a-torus>
+          <!-- Cap grip/knob -->
+          <a-cylinder 
+            position="0 0.05 0"
+            height="0.06" 
+            radius="0.03" 
+            color="#DD6622">
+          </a-cylinder>
+          <a-sphere 
+            position="0 0.08 0" 
+            radius="0.035" 
+            color="#DD6622">
+          </a-sphere>
+        </a-entity>
 
-  </a-entity>
+      </a-entity>
 
-</a-scene>
+      <!-- Glow/Highlight indicators -->
+      <a-ring
+        id="capHighlight"
+        position="0.5 0.57 -2"
+        rotation="-90 0 0"
+        radius-inner="0.13"
+        radius-outer="0.18"
+        color="#00ff88"
+        opacity="0.7"
+        animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 800">
+      </a-ring>
 
-<script>
-let step = 0;
-const instructions = [
-  "Place the cup base",
-  "Align the cover on top",
-  "Twist the cap clockwise",
-  "Assembly Complete!"
-];
+      <a-ring
+        id="cupHighlight"
+        position="0 0.57 -2"
+        rotation="-90 0 0"
+        radius-inner="0.12"
+        radius-outer="0.17"
+        color="#00ccff"
+        opacity="0"
+        visible="false">
+      </a-ring>
 
-function speak(text) {
-  const utterance = new SpeechSynthesisUtterance(text);
-  speechSynthesis.speak(utterance);
-}
+      <!-- Environment -->
+      <a-plane
+        position="0 0 -2"
+        rotation="-90 0 0"
+        width="20"
+        height="20"
+        src="#floor">
+      </a-plane>
 
-function updateUI() {
-  document.getElementById("instruction").innerText = instructions[step];
-  document.getElementById("progress").style.width = (step / 3) * 100 + "%";
-  speak(instructions[step]);
-}
+      <a-sky src="#city-sky"></a-sky>
 
-function nextStep() {
-  step++;
+      <!-- VR Scene Title -->
+      <a-text
+        value="VR Assembly Guidance System"
+        position="0 2.5 -2.5"
+        align="center"
+        color="#FFFFFF"
+        width="6">
+      </a-text>
 
-  if (step === 1) {
-    document.querySelector("#cover").setAttribute("visible", true);
-  }
-  if (step === 2) {
-    document.querySelector("#cap").setAttribute("visible", true);
-    animateCap();
-  }
-  if (step >= 3) {
-    step = 3;
-  }
+      <!-- Assembly Guidance System Script -->
+      <script>
+        // Assembly State
+        let currentStep = 0;
+        const totalSteps = 4;
 
-  updateUI();
-}
+        const instructions = [
+          "Click the green cap or press the trigger to pick it up",
+          "Move the cap above the cup",
+          "Lower the cap onto the cup",
+          "Twist the cap to lock it in place",
+          "Assembly Complete! Great job!"
+        ];
 
-function animateCap() {
-  const cap = document.querySelector("#cap");
-  cap.setAttribute("animation",
-    "property: rotation; to: 0 360 0; dur: 2000; easing: linear;");
-}
+        // Voice Guidance
+        function speak(text) {
+          if ('speechSynthesis' in window) {
+            speechSynthesis.cancel(); // Cancel any ongoing speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            speechSynthesis.speak(utterance);
+          }
+        }
 
-window.addEventListener("click", nextStep);
-updateUI();
-</script>
+        // Update UI
+        function updateUI() {
+          document.getElementById('instruction').innerText = instructions[currentStep];
+          document.getElementById('progress').style.width = (currentStep / totalSteps * 100) + '%';
+          document.getElementById('stepInfo').innerText = `Step ${currentStep} of ${totalSteps}`;
+          speak(instructions[currentStep]);
+        }
 
-</body>
+        // Progress to next step
+        function nextStep() {
+          if (currentStep >= totalSteps) return;
+
+          const cap = document.querySelector('#cap');
+          const capHighlight = document.querySelector('#capHighlight');
+          const cupHighlight = document.querySelector('#cupHighlight');
+
+          currentStep++;
+
+          // Step 1: Pick up cap
+          if (currentStep === 1) {
+            cap.setAttribute('animation', 
+              'property: position; to: 0.4 0.35 0; dur: 1000; easing: easeInOutQuad');
+            capHighlight.setAttribute('visible', 'false');
+            cupHighlight.setAttribute('visible', 'true');
+            cupHighlight.setAttribute('opacity', '0.7');
+            cupHighlight.setAttribute('animation', 
+              'property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 800');
+          }
+          // Step 2: Move above cup
+          else if (currentStep === 2) {
+            cap.setAttribute('animation', 
+              'property: position; to: 0 0.4 0; dur: 1200; easing: easeInOutQuad');
+          }
+          // Step 3: Lower onto cup
+          else if (currentStep === 3) {
+            cap.setAttribute('animation', 
+              'property: position; to: 0 0.17 0; dur: 1500; easing: easeInOutQuad');
+            cupHighlight.setAttribute('visible', 'false');
+          }
+          // Step 4: Twist to lock
+          else if (currentStep === 4) {
+            cap.setAttribute('animation', 
+              'property: rotation; from: 0 0 0; to: 0 360 0; dur: 2000; easing: easeInOutQuad');
+            
+            // Show completion effect
+            setTimeout(() => {
+              cap.setAttribute('animation__glow', 
+                'property: scale; to: 1.15 1.15 1.15; dir: alternate; loop: 2; dur: 400');
+            }, 2000);
+          }
+
+          updateUI();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+          updateUI();
+
+          // Click handlers for desktop
+          window.addEventListener('click', function() {
+            if (currentStep < totalSteps) {
+              nextStep();
+            }
+          });
+
+          // VR controller trigger handlers
+          const scene = document.querySelector('a-scene');
+          scene.addEventListener('loaded', function() {
+            const leftController = document.querySelector('#leftController');
+            const rightController = document.querySelector('#rightController');
+
+            if (leftController) {
+              leftController.addEventListener('triggerdown', function() {
+                if (currentStep < totalSteps) {
+                  nextStep();
+                }
+              });
+            }
+
+            if (rightController) {
+              rightController.addEventListener('triggerdown', function() {
+                if (currentStep < totalSteps) {
+                  nextStep();
+                }
+              });
+            }
+          });
+
+          // Cap click handler for more interactivity
+          const cap = document.querySelector('#cap');
+          const cup = document.querySelector('#cup');
+          
+          if (cap) {
+            cap.addEventListener('click', function() {
+              if (currentStep === 0) {
+                nextStep();
+              }
+            });
+          }
+
+          console.log('✅ Cup and Cap models loaded and ready');
+        });
+
+        // Welcome message
+        setTimeout(() => {
+          speak("Welcome to the VR Assembly Guidance System. Follow the instructions to assemble the cup.");
+        }, 1000);
+      </script>
+
+    </a-scene>
+  </body>
 </html>
