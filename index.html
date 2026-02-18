@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebXR AR Tumbler Assembly</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+  <!-- AR.js -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #ui {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-family: sans-serif;
+    }
+    #progressBar {
+      width: 80%;
+      height: 10px;
+      background: #444;
+      margin: auto;
+      border-radius: 10px;
+    }
+    #progress {
+      height: 100%;
+      width: 0%;
+      background: lime;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="ui">
+  <h3 id="instruction">Scan surface...</h3>
+  <div id="progressBar">
+    <div id="progress"></div>
+  </div>
+</div>
+
+<a-scene
+  embedded
+  vr-mode-ui="enabled: true"
+  renderer="logarithmicDepthBuffer: true;"
+  xr-mode-ui="enabled: true"
+  arjs="sourceType: webcam;">
+
+  <!-- Camera -->
+  <a-entity camera></a-entity>
+
+  <!-- Anchor -->
+  <a-entity id="anchor" visible="false">
+    
+    <a-entity id="cup"
+      gltf-model="cup.gltf"
+      scale="0.3 0.3 0.3"
+      material="opacity: 0.5; transparent: true">
+    </a-entity>
+
+    <a-entity id="cover"
+      gltf-model="cover.gltf"
+      scale="0.3 0.3 0.3"
+      position="0 0.1 0"
+      visible="false"
+      material="opacity: 0.5; transparent: true">
+    </a-entity>
+
+    <a-entity id="cap"
+      gltf-model="cap.gltf"
+      scale="0.3 0.3 0.3"
+      position="0 0.2 0"
+      visible="false"
+      material="opacity: 0.5; transparent: true">
+    </a-entity>
+
+  </a-entity>
+
+</a-scene>
+
+<script>
+let step = 0;
+const instructions = [
+  "Place the cup base",
+  "Align the cover on top",
+  "Twist the cap clockwise",
+  "Assembly Complete!"
+];
+
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  speechSynthesis.speak(utterance);
+}
+
+function updateUI() {
+  document.getElementById("instruction").innerText = instructions[step];
+  document.getElementById("progress").style.width = (step / 3) * 100 + "%";
+  speak(instructions[step]);
+}
+
+function nextStep() {
+  step++;
+
+  if (step === 1) {
+    document.querySelector("#cover").setAttribute("visible", true);
+  }
+  if (step === 2) {
+    document.querySelector("#cap").setAttribute("visible", true);
+    animateCap();
+  }
+  if (step >= 3) {
+    step = 3;
+  }
+
+  updateUI();
+}
+
+function animateCap() {
+  const cap = document.querySelector("#cap");
+  cap.setAttribute("animation",
+    "property: rotation; to: 0 360 0; dur: 2000; easing: linear;");
+}
+
+window.addEventListener("click", nextStep);
+updateUI();
+</script>
+
+</body>
+</html>
